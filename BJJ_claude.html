@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BJJ Training Tracker</title>
+  <!-- Add some basic styles -->
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f7;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    
+    h2 {
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+    
+    .search-bar {
+      width: 100%;
+      display: flex;
+      margin-bottom: 16px;
+    }
+    
+    .search-bar input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    
+    .add-button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    
+    .form-container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      color: #777;
+      cursor: pointer;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .submit-button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      float: right;
+    }
+    
+    .drill-list {
+      display: grid;
+      gap: 16px;
+    }
+    
+    .drill-card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .drill-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .drill-date {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    
+    .drill-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px 0;
+    }
+    
+    .category-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    
+    .drill-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .action-button {
+      background: none;
+      border: none;
+      color: #0066cc;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .delete-button {
+      color: #ff3b30;
+    }
+    
+    .drill-notes {
+      margin-bottom: 16px;
+      color: #333;
+    }
+    
+    .video-preview {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 aspect ratio */
+      background-color: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .video-preview img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .video-label {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      background-color: white;
+      border-radius: 8px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BJJ Training Tracker</h1>
+    
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search drills...">
+      <button class="add-button" id="add-drill-button">Add Drill</button>
+    </div>
+    
+    <div class="form-container" id="drill-form" style="display: none;">
+      <div class="form-header">
+        <h2 id="form-title">Add New Drill</h2>
+        <button class="close-button" id="close-form">Close</button>
+      </div>
+      
+      <form id="bjj-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="drill-date">Date</label>
+            <input type="date" id="drill-date" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="drill-category">Category</label>
+            <select id="drill-category">
+              <!-- Categories will be populated by JavaScript -->
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="drill-name">Drill Name</label>
+          <input type="text" id="drill-name" placeholder="e.g., Arm Bar from Guard" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="drill-video">YouTube Video URL</label>
+          <input type="text" id="drill-video" placeholder="e.g., https://www.youtube.com/watch?v=example">
+        </div>
+        
+        <div class="form-group">
+          <label for="drill-notes">Notes</label>
+          <textarea id="drill-notes" rows="4" placeholder="Key details, tips, and reminders..."></textarea>
+        </div>
+        
+        <button type="submit" class="submit-button" id="save-drill">Save Drill</button>
+      </form>
+    </div>
+    
+    <h2>Your Drills History</h2>
+    
+    <div id="drill-list" class="drill-list">
+      <!-- Drills will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // App state
+    let drills = [
+      {
+        id: 1,
+        date: '2025-02-28',
+        name: 'Arm Bar from Guard',
+        notes: 'Keep elbows tight, hips high when finishing',
+        videoUrl: 'https://www.youtube.com/watch?v=example1',
+        categoryId: 1
+      },
+      {
+        id: 2,
+        date: '2025-02-26',
+        name: 'Triangle Defense',
+        notes: 'Posture up, hand on mat for base, pull trapped arm out',
+        videoUrl: 'https://www.youtube.com/watch?v=example2',
+        categoryId: 2
+      },
+      {
+        id: 3,
+        date: '2025-02-24',
+        name: 'Toreando Pass',
+        notes: 'Control the knees, circle around with pressure',
+        videoUrl: 'https://www.youtube.com/watch?v=example3',
+        categoryId: 3
+      }
+    ];
+    
+    const categories = [
+      { id: 1, name: 'Submission', color: '#FF5252' },
+      { id: 2, name: 'Defense', color: '#4CAF50' },
+      { id: 3, name: 'Pass', color: '#2196F3' },
+      { id: 4, name: 'Sweep', color: '#FF9800' },
+      { id: 5, name: 'Position', color: '#9C27B0' }
+    ];
+    
+    let editingDrillId = null;
+    
+    // Load data from localStorage if available
+    function loadData() {
+      const savedDrills = localStorage.getItem('bjjDrills');
+      if (savedDrills) {
+        drills = JSON.parse(savedDrills);
+      }
+    }
+    
+    // Save data to localStorage
+    function saveData() {
+      localStorage.setItem('bjjDrills', JSON.stringify(drills));
+    }
+    
+    // Format date to show day of week
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString(undefined, options);
+    }
+    
+    // Get YouTube video ID from URL
+    function getYouTubeId(url) {
+      if (!url) return null;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+    
+    // Get category by ID
+    function getCategoryById(id) {
+      return categories.find(cat => cat.id === parseInt(id)) || { name: 'Unknown', color: '#ccc' };
+    }
+    
+    // Populate categories in dropdown
+    function populateCategories() {
+      const select = document.getElementById('drill-category');
+      select.innerHTML = '';
+      
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        select.appendChild(option);
+      });
+    }
+    
+    // Render all drills
+    function renderDrills() {
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const drillList = document.getElementById('drill-list');
+      
+      // Filter drills based on search term
+      const filteredDrills = drills.filter(drill => {
+        if (!searchTerm) return true;
+        
+        return (
+          drill.name.toLowerCase().includes(searchTerm) ||
+          drill.notes.toLowerCase().includes(searchTerm) ||
+          getCategoryById(drill.categoryId).name.toLowerCase().includes(searchTerm)
+        );
+      });
+      
+      // Sort drills by date (newest first)
+      filteredDrills.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Clear the list
+      drillList.innerHTML = '';
+      
+      // Check if there are any drills
+      if (filteredDrills.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state';
+        emptyState.textContent = searchTerm ? 'No drills match your search' : 'No drills added yet';
+        drillList.appendChild(emptyState);
+        return;
+      }
+      
+      // Add each drill to the list
+      filteredDrills.forEach(drill => {
+        const category = getCategoryById(drill.categoryId);
+        
+        const drillCard = document.createElement('div');
+        drillCard.className = 'drill-card';
+        
+        const drillHeader = document.createElement('div');
+        drillHeader.className = 'drill-header';
+        
+        const drillInfo = document.createElement('div');
+        
+        const drillDate = document.createElement('div');
+        drillDate.className = 'drill-date';
+        drillDate.textContent = formatDate(drill.date);
+        drillInfo.appendChild(drillDate);
+        
+        const drillTitle = document.createElement('h3');
+        drillTitle.className = 'drill-title';
+        drillTitle.textContent = drill.name;
+        drillInfo.appendChild(drillTitle);
+        
+        const categoryTag = document.createElement('span');
+        categoryTag.className = 'category-tag';
+        categoryTag.textContent = category.name;
+        categoryTag.style.backgroundColor = category.color;
+        categoryTag.style.color = parseInt(category.color.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff';
+        drillInfo.appendChild(categoryTag);
+        
+        drillHeader.appendChild(drillInfo);
+        
+        const drillActions = document.createElement('div');
+        drillActions.className = 'drill-actions';
+        
+        const editButton = document.createElement('button');
+        editButton.className = 'action-button';
+        editButton.textContent = 'Edit';
+        editButton.addEventListener('click', () => editDrill(drill));
+        drillActions.appendChild(editButton);
+        
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'action-button delete-button';
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => deleteDrill(drill.id));
+        drillActions.appendChild(deleteButton);
+        
+        drillHeader.appendChild(drillActions);
+        drillCard.appendChild(drillHeader);
+        
+        if (drill.notes) {
+          const drillNotes = document.createElement('div');
+          drillNotes.className = 'drill-notes';
+          drillNotes.textContent = drill.notes;
+          drillCard.appendChild(drillNotes);
+        }
+        
+        if (drill.videoUrl) {
+          const videoPreview = document.createElement('div');
+          videoPreview.className = 'video-preview';
+          
+          const img = document.createElement('img');
+          img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect width="320" height="180" fill="%23ddd"/><text x="160" y="90" font-family="sans-serif" font-size="24" text-anchor="middle" alignment-baseline="middle" fill="%23666">Video Preview</text></svg>';
+          img.alt = 'Video thumbnail';
+          
+          const playButton = document.createElement('div');
+          playButton.className = 'video-play-button';
+          
+          const videoLabel = document.createElement('div');
+          videoLabel.className = 'video-label';
+          videoLabel.textContent = 'YouTube Video';
+          
+          videoPreview.appendChild(img);
+          videoPreview.appendChild(videoLabel);
+          
+          // Add click event to open YouTube video
+          videoPreview.addEventListener('click', () => {
+            const videoId = getYouTubeId(drill.videoUrl);
+            if (videoId) {
+              window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank');
+            }
+          });
+          
+          drillCard.appendChild(videoPreview);
+        }
+        
+        drillList.appendChild(drillCard);
+      });
+    }
+    
+    // Show the form for adding/editing a drill
+    function showForm() {
+      document.getElementById('drill-form').style.display = 'block';
+    }
+    
+    // Hide the form
+    function hideForm() {
+      document.getElementById('drill-form').style.display = 'none';
+      resetForm();
+    }
+    
+    // Reset the form
+    function resetForm() {
+      document.getElementById('bjj-form').reset();
+      document.getElementById('drill-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('form-title').textContent = 'Add New Drill';
+      editingDrillId = null;
+    }
+    
+    // Edit a drill
+    function editDrill(drill) {
+      document.getElementById('form-title').textContent = 'Edit Drill';
+      document.getElementById('drill-date').value = drill.date;
+      document.getElementById('drill-category').value = drill.categoryId;
+      document.getElementById('drill-name').value = drill.name;
+      document.getElementById('drill-video').value = drill.videoUrl || '';
+      document.getElementById('drill-notes').value = drill.notes || '';
+      
+      editingDrillId = drill.id;
+      showForm();
+    }
+    
+    // Delete a drill
+    function deleteDrill(id) {
+      if (confirm('Are you sure you want to delete this drill?')) {
+        drills = drills.filter(drill => drill.id !== id);
+        saveData();
+        renderDrills();
+      }
+    }
+    
+    // Initialize the app
+    function init() {
+      // Load data from localStorage
+      loadData();
+      
+      // Populate categories
+      populateCategories();
+      
+      // Set default date to today
+      document.getElementById('drill-date').value = new Date().toISOString().split('T')[0];
+      
+      // Add event listeners
+      document.getElementById('add-drill-button').addEventListener('click', () => {
+        resetForm();
+        showForm();
+      });
+      
+      document.getElementById('close-form').addEventListener('click', hideForm);
+      
+      document.getElementById('bjj-form').addEventListener('submit', event => {
+        event.preventDefault();
+        
+        const drillData = {
+          date: document.getElementById('drill-date').value,
+          name: document.getElementById('drill-name').value,
+          notes: document.getElementById('drill-notes').value,
+          videoUrl: document.getElementById('drill-video').value,
+          categoryId: parseInt(document.getElementById('drill-category').value)
+        };
+        
+        if (editingDrillId) {
+          // Update existing drill
+          drillData.id = editingDrillId;
+          drills = drills.map(drill => drill.id === editingDrillId ? drillData : drill);
+        } else {
+          // Add new drill
+          drillData.id = Date.now();
+          drills.unshift(drillData);
+        }
+        
+        saveData();
+        renderDrills();
+        hideForm();
+      });
+      
+      document.getElementById('search-input').addEventListener('input', renderDrills);
+      
+      // Initial render
+      renderDrills();
+    }
+    
+    // Start the app
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
