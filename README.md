@@ -9,4 +9,5 @@ Improved with a mix of human effort and AI copilots.
 - TBD
 
 ## Branches
-- TBD
+- [`claude-original`](https://github.com/engineereng/bjj-tracker/tree/claude-original) - output given by first prompting through Loveable, then refining the output by giving successive prompts to Claude
+- [`chatgpt-original`](https://github.com/engineereng/bjj-tracker/tree/chatgpt-original) - output given by first prompting through Loveable, then refining the output by giving successive prompts to ChatGPT
