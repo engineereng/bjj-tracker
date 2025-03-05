@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BJJ Drill Tracker</title>
+  <style>
+    /* Basic resets and layout */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+      color: #333;
+    }
+    header, main {
+      max-width: 800px;
+      margin: auto;
+      padding: 1em;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      text-align: center;
+    }
+    h1, h2 {
+      margin-top: 0;
+    }
+    /* Form styling */
+    form {
+      background: #fff;
+      padding: 1em;
+      margin-bottom: 1em;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin: 0.5em 0 0.2em;
+    }
+    input[type="text"],
+    input[type="url"],
+    input[type="date"],
+    input[type="color"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.5em;
+      box-sizing: border-box;
+      margin-bottom: 0.5em;
+    }
+    button {
+      padding: 0.6em 1.2em;
+      border: none;
+      background: #333;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    /* Drill history items */
+    .drill-item {
+      background: #fff;
+      padding: 1em;
+      margin-bottom: 1em;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .drill-item strong {
+      font-size: 1.2em;
+    }
+    .category-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #fff;
+      margin-left: 0.5em;
+    }
+    .video-preview img, .video-preview iframe {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      cursor: pointer;
+      margin-top: 0.5em;
+    }
+    /* Responsive adjustments */
+    @media (min-width: 600px) {
+      form, .drill-item {
+        padding: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BJJ Drill Tracker</h1>
+  </header>
+  <main>
+    <!-- Drill Entry Form -->
+    <section id="drill-form-section">
+      <h2>Add / Edit Drill</h2>
+      <form id="drill-form">
+        <input type="hidden" id="drill-id" value="">
+        <label for="drill-date">Date:</label>
+        <input type="date" id="drill-date" required>
+        <span id="day-of-week"></span>
+        <label for="drill-name">Drill Name:</label>
+        <input type="text" id="drill-name" placeholder="e.g. Arm Bar" required>
+        <label for="drill-notes">Notes:</label>
+        <textarea id="drill-notes" placeholder="Key learnings"></textarea>
+        <label for="drill-youtube">YouTube Link:</label>
+        <input type="url" id="drill-youtube" placeholder="https://www.youtube.com/watch?v=...">
+        <label for="drill-category">Category:</label>
+        <select id="drill-category"></select>
+        <button type="submit">Save Drill</button>
+      </form>
+    </section>
+
+    <!-- Search Section -->
+    <section id="search-section">
+      <h2>Search Drills</h2>
+      <input type="text" id="search-input" placeholder="Search by drill name or notes">
+    </section>
+
+    <!-- Drill History Section -->
+    <section id="drill-history-section">
+      <h2>Drill History</h2>
+      <div id="drill-history"></div>
+    </section>
+
+    <!-- Category Management Section -->
+    <section id="category-management">
+      <h2>Manage Categories</h2>
+      <form id="category-form">
+        <input type="hidden" id="category-id" value="">
+        <label for="category-name">Category Name:</label>
+        <input type="text" id="category-name" placeholder="e.g. Submission" required>
+        <label for="category-color">Category Color:</label>
+        <input type="color" id="category-color" value="#ff0000" required>
+        <button type="submit">Save Category</button>
+      </form>
+      <div id="category-list"></div>
+    </section>
+  </main>
+
+  <script>
+    // --- Data storage and helper functions ---
+    function loadData(key) {
+      return JSON.parse(localStorage.getItem(key)) || [];
+    }
+    function saveData(key, data) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+    function generateId() {
+      return '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // --- Global variables ---
+    let drills = loadData('drills');
+    let categories = loadData('categories');
+
+    // Initialize default categories if none exist
+    if(categories.length === 0) {
+      categories = [
+        { id: generateId(), name: 'Submission', color: '#ff6666' },
+        { id: generateId(), name: 'Defense', color: '#66cc66' },
+        { id: generateId(), name: 'Pass', color: '#6666ff' }
+      ];
+      saveData('categories', categories);
+    }
+
+    // --- UI Rendering Functions ---
+    function populateCategoryDropdown() {
+      const select = document.getElementById('drill-category');
+      select.innerHTML = '';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+    }
+
+    function renderCategories() {
+      const list = document.getElementById('category-list');
+      list.innerHTML = '';
+      categories.forEach(cat => {
+        const div = document.createElement('div');
+        div.style.border = '1px solid #ccc';
+        div.style.padding = '5px';
+        div.style.margin = '5px 0';
+        div.innerHTML = '<span class="category-badge" style="background-color:' + cat.color + ';">' + cat.name + '</span> ' +
+          '<button onclick="editCategory(\''+ cat.id +'\')">Edit</button> ' +
+          '<button onclick="deleteCategory(\''+ cat.id +'\')">Delete</button>';
+        list.appendChild(div);
+      });
+    }
+
+    function renderDrills(filter = '') {
+      const historyDiv = document.getElementById('drill-history');
+      historyDiv.innerHTML = '';
+      let filteredDrills = drills.filter(drill => {
+        return drill.name.toLowerCase().includes(filter.toLowerCase()) ||
+               (drill.notes && drill.notes.toLowerCase().includes(filter.toLowerCase()));
+      });
+      // Sort drills by date (newest first)
+      filteredDrills.sort((a, b) => new Date(b.date) - new Date(a.date));
+      filteredDrills.forEach(drill => {
+        const drillDiv = document.createElement('div');
+        drillDiv.className = 'drill-item';
+        const cat = categories.find(c => c.id === drill.category);
+        const catColor = cat ? cat.color : '#000';
+        const dayOfWeek = new Date(drill.date).toLocaleDateString('en-US', { weekday: 'long' });
+        drillDiv.innerHTML = `
+          <strong>${drill.name}</strong> <small>(${new Date(drill.date).toLocaleDateString()} - ${dayOfWeek})</small>
+          <span class="category-badge" style="background-color: ${catColor};">
+            ${cat ? cat.name : 'No Category'}
+          </span>
+          <p>${drill.notes || ''}</p>
+          <div class="video-preview" data-youtube="${drill.youtube}">
+            ${drill.youtube ? getYouTubeThumbnailHTML(drill.youtube) : ''}
+          </div>
+          <button onclick="editDrill('${drill.id}')">Edit</button>
+        `;
+        // Enable video play on click (or you could also use hover)
+        const videoDiv = drillDiv.querySelector('.video-preview');
+        if(videoDiv && drill.youtube) {
+          videoDiv.addEventListener('click', function(){
+            loadYouTubeVideo(this);
+          });
+        }
+        historyDiv.appendChild(drillDiv);
+      });
+    }
+
+    // --- YouTube Preview Helpers ---
+    function extractYouTubeID(url) {
+      const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+      const match = url.match(regex);
+      return match ? match[1] : null;
+    }
+    function getYouTubeThumbnailHTML(url) {
+      const videoId = extractYouTubeID(url);
+      if(videoId) {
+        const thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/0.jpg';
+        return `<img src="${thumbUrl}" alt="YouTube Thumbnail">`;
+      }
+      return '';
+    }
+    function loadYouTubeVideo(container) {
+      const url = container.getAttribute('data-youtube');
+      const videoId = extractYouTubeID(url);
+      if(videoId) {
+        container.innerHTML = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+      }
+    }
+
+    // --- Event Handlers ---
+    document.getElementById('drill-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const id = document.getElementById('drill-id').value;
+      const date = document.getElementById('drill-date').value;
+      const name = document.getElementById('drill-name').value;
+      const notes = document.getElementById('drill-notes').value;
+      const youtube = document.getElementById('drill-youtube').value;
+      const category = document.getElementById('drill-category').value;
+      if(id) {
+        // Edit existing drill
+        const index = drills.findIndex(d => d.id === id);
+        if(index > -1) {
+          drills[index] = { id, date, name, notes, youtube, category };
+        }
+      } else {
+        // Create new drill
+        drills.push({ id: generateId(), date, name, notes, youtube, category });
+      }
+      saveData('drills', drills);
+      renderDrills(document.getElementById('search-input').value);
+      this.reset();
+      document.getElementById('drill-id').value = '';
+    });
+
+    // Update day-of-week display when date changes
+    document.getElementById('drill-date').addEventListener('change', function() {
+      const dayOfWeekSpan = document.getElementById('day-of-week');
+      const date = new Date(this.value);
+      dayOfWeekSpan.textContent = date.toLocaleDateString('en-US', { weekday: 'long' });
+    });
+
+    // Edit drill: populate form with drill data
+    function editDrill(id) {
+      const drill = drills.find(d => d.id === id);
+      if(drill) {
+        document.getElementById('drill-id').value = drill.id;
+        document.getElementById('drill-date').value = drill.date;
+        // Trigger change event to update day-of-week
+        document.getElementById('drill-date').dispatchEvent(new Event('change'));
+        document.getElementById('drill-name').value = drill.name;
+        document.getElementById('drill-notes').value = drill.notes;
+        document.getElementById('drill-youtube').value = drill.youtube;
+        document.getElementById('drill-category').value = drill.category;
+        window.scrollTo(0, 0);
+      }
+    }
+    window.editDrill = editDrill; // Expose to global for inline onclick
+
+    // Search functionality
+    document.getElementById('search-input').addEventListener('input', function() {
+      renderDrills(this.value);
+    });
+
+    // Category form handler
+    document.getElementById('category-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const id = document.getElementById('category-id').value;
+      const name = document.getElementById('category-name').value;
+      const color = document.getElementById('category-color').value;
+      if(id) {
+        const index = categories.findIndex(c => c.id === id);
+        if(index > -1) {
+          categories[index] = { id, name, color };
+        }
+      } else {
+        categories.push({ id: generateId(), name, color });
+      }
+      saveData('categories', categories);
+      populateCategoryDropdown();
+      renderCategories();
+      this.reset();
+      document.getElementById('category-id').value = '';
+    });
+
+    // Edit category function
+    function editCategory(id) {
+      const cat = categories.find(c => c.id === id);
+      if(cat) {
+        document.getElementById('category-id').value = cat.id;
+        document.getElementById('category-name').value = cat.name;
+        document.getElementById('category-color').value = cat.color;
+      }
+    }
+    window.editCategory = editCategory;
+
+    // Delete category function
+    function deleteCategory(id) {
+      categories = categories.filter(c => c.id !== id);
+      // Update drills that used this category
+      drills = drills.map(drill => {
+        if(drill.category === id) {
+          drill.category = '';
+        }
+        return drill;
+      });
+      saveData('categories', categories);
+      saveData('drills', drills);
+      populateCategoryDropdown();
+      renderCategories();
+      renderDrills(document.getElementById('search-input').value);
+    }
+    window.deleteCategory = deleteCategory;
+
+    // --- Initialization ---
+    populateCategoryDropdown();
+    renderCategories();
+    renderDrills();
+  </script>
+</body>
+</html>
